@@ -194,7 +194,8 @@ public class EnemyChaseState : EnemyBehaviourState
 {
     private float chasespeed = 5f;
 
-    public EnemyChaseState(Enemy instance) : base(instance);
+    public EnemyChaseState(Enemy instance) : base(instance)
+    { }
     
 
     public override void OnStateEnter()
