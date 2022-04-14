@@ -1,0 +1,26 @@
+﻿<Properties>
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/C# Script/FiniteStateMachine.cs">
+    <Files>
+      <File FileName="Assets/MenuButton.cs" Line="36" Column="7" />
+      <File FileName="Assets/MenuNavigation.cs" Line="62" Column="29" />
+      <File FileName="Assets/testInteraction.cs" />
+      <File FileName="Assets/SomeScript.cs" />
+      <File FileName="Assets/C# Script/Enemy.cs" Line="120" Column="1" />
+      <File FileName="Assets/C# Script/FiniteStateMachine.cs" Line="29" Column="1" />
+    </Files>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State name="__root__">
+          <Node name="AT03 Indie Game" expanded="True" selected="True" />
+        </State>
+      </Pad>
+    </Pads>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="647dc32f-a8f2-48c1-8b37-8596251237a2" />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MultiItemStartupConfigurations />
+</Properties>
