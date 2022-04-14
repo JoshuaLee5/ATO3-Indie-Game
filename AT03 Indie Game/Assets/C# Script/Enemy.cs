@@ -8,18 +8,33 @@ public class Enemy : FiniteStateMachine
     public Bounds bounds;
     public float viewRadius;
     public Transform player;
-
+    public EnemyIdleState idleState;
+    public EnemyWanderState wanderState;
+    public EnemyChaseState chaseState;
 
     public NavMeshAgent Agent { get; private set; }
     public Transform Target { get; private set; }
+    public Animator Anim { get; private set; }
+    public AudioSource AudioSource { get; private set; }
 
     protected override void Awake()
     {
-        entryState = new EnemyIdleState(this);
-        
+        idleState = new EnemyIdleState(this, idleState);
+        wanderState = new EnemyWanderState(this, wanderState);
+        chaseState = new EnemyChaseState(this, chaseState);
+        entryState = idleState;
         if (TryGetComponent(out NavMeshAgent agent) == true)
         {
             Agent = agent;
+        }
+        if (TryGetComponent(out AudioSource aSrc) == true)
+        {
+            AudioSource = aSrc;
+        }
+
+        if(transform.GetChild(0).TryGetComponent(out Animator anim) == true)
+        {
+            Anim = anim;
         }
     }
     
@@ -34,25 +49,7 @@ public class Enemy : FiniteStateMachine
     protected override void Update()
     {
         base.Update();
-        if (Vector3.Distance(transform.position, player.position) <= viewRadius)
-        {
-            //if we are not curr
-            if(CurrentState.GetType() != typeof(EnemyChaseState))
-            {
-                Debug.Log("Player in range, enter chase state.");
-                SetState(new EnemyChaseState(this));
-            }
-        }
-        else
-        {
-            if (CurrentState.GetType() == typeof(EnemyWanderState))
-            {
-                Debug.Log("Player out of range, enter wander state.");
-                SetState(new EnemyWanderState(this));
-            }
-
-
-        }
+        
     }
 
     protected override void OnDrawGizmos()
@@ -84,15 +81,21 @@ public abstract class EnemyBehaviourState : IState
 
 }
 
+[System.Serializable]
 public class EnemyIdleState : EnemyBehaviourState
 {
+    [SerializeField]
     private Vector2 idleTimeRange = new Vector2(3, 10);
+    [SerializeField]
+    private AudioClip idleClip;
     private float timer = -1;
     private float idleTime = 0;
+    
 
-    public EnemyIdleState(Enemy instance) : base(instance)
+    public EnemyIdleState(Enemy instance, EnemyIdleState idle) : base(instance)
     {
-
+        idleTimeRange = idle.idleTimeRange;
+        idleClip = idle.idleClip;
     }
 
     public override void OnStateEnter()
@@ -100,7 +103,9 @@ public class EnemyIdleState : EnemyBehaviourState
         Instance.Agent.isStopped = true;
         idleTime = Random.Range(idleTimeRange.x, idleTimeRange.y);
         timer = 0;
+        Instance.Anim.SetBool("isMoving", false);
         Debug.Log("Idle State entered, waiting for " + idleTime + " seconds.");
+        Instance.AudioSource.PlayOneShot(idleClip);
 
     }
     public override void OnStateExit()
@@ -114,7 +119,7 @@ public class EnemyIdleState : EnemyBehaviourState
     {
         if (Vector3.Distance(Instance.transform.position, Instance.player.position) <= Instance.viewRadius)
         {
-            Instance.SetState(new EnemyChaseState(Instance));
+            Instance.SetState(Instance.chaseState);
         }
 
         if (timer >= 0)
@@ -123,19 +128,22 @@ public class EnemyIdleState : EnemyBehaviourState
             if (timer >= idleTime)
             {
                 Debug.Log("Exiting Idle State after " + idleTime + " seconds.");
-                Instance.SetState(new EnemyWanderState(Instance));
+                Instance.SetState(Instance.wanderState);
             }
         }
     }
 }
-
+[System.Serializable]
 public class EnemyWanderState : EnemyBehaviourState
 {
+    [SerializeField]
     private Vector3 targetPosition;
-    private float wanderSpeed = 3.5f;
+    private float wanderSpeed = 2.5f;
+    [SerializeField]
+    private AudioClip wanderClip;
 
 
-    public EnemyWanderState(Enemy instance) : base(instance)
+    public EnemyWanderState(Enemy instance, EnemyWanderState wander) : base(instance)
     { 
     }
 
@@ -152,6 +160,9 @@ public class EnemyWanderState : EnemyBehaviourState
             );
         targetPosition = randomPosInBounds;
         Instance.Agent.SetDestination(targetPosition);
+        Instance.Anim.SetBool("isMoving", true);
+        Instance.Anim.SetBool("isChasing", false);
+
         Debug.Log("Wander State Entered with a target pos of " + targetPosition);
     }
 
@@ -166,12 +177,12 @@ public class EnemyWanderState : EnemyBehaviourState
         t.y = 0;
         if (Vector3.Distance(Instance.transform.position, targetPosition) <= Instance.Agent.stoppingDistance)
         {
-            Instance.SetState(new EnemyIdleState(Instance));
+            Instance.SetState(Instance.idleState);
         }
 
         if (Vector3.Distance(Instance.transform.position, Instance.player.position) <= Instance.viewRadius)
         {
-            Instance.SetState(new EnemyChaseState(Instance));
+            Instance.SetState(Instance.chaseState);
         }
 
 
@@ -189,18 +200,25 @@ public class EnemyWanderState : EnemyBehaviourState
 
 
 }
-
+[System.Serializable]
 public class EnemyChaseState : EnemyBehaviourState
 {
-    private float chasespeed = 5f;
+    [SerializeField]
+    private float chasespeed = 2.5f;
+    [SerializeField]
+    private AudioClip chaseClip;
 
-    public EnemyChaseState(Enemy instance) : base(instance)
+    public EnemyChaseState(Enemy instance, EnemyChaseState chase) : base(instance)
     { }
     
 
     public override void OnStateEnter()
-    { 
+    {
+        Instance.Agent.isStopped = false;
         Instance.Agent.speed = chasespeed;
+        Instance.Anim.SetBool("isMoving", true);
+        Instance.Anim.SetBool("isChasing", true);
+        Instance.AudioSource.PlayOneShot(chaseClip);
     }
     public override void OnStateExit()
     {
@@ -214,12 +232,12 @@ public class EnemyChaseState : EnemyBehaviourState
         }
         else
         { 
-            Instance.SetState(new EnemyWanderState(Instance));
+            Instance.SetState(Instance.wanderState);
         }
 
         if (Vector3.Distance(Instance.transform.position, Instance.player.position) > Instance.viewRadius)
         {
-            Instance.SetState(new EnemyChaseState(Instance));
+            Instance.SetState(Instance.wanderState);
         }
 
     }
